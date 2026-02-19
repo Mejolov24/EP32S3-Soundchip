@@ -19,7 +19,7 @@ audio_queue = bytearray()
 colors = [ 'y', 'r', 'g', 'b', 'c', 'm']
 app = pg.mkQApp("Oscilloscope")
 win = pg.GraphicsLayoutWidget(show = True)
-BUFFER = 1000
+BUFFER = 500
 plots = []
 curves = []
 local_buffer = []
@@ -57,25 +57,29 @@ data_lock = threading.Lock()
 from collections import deque
 audio_fifo = deque(maxlen=50000)
 
+def audio_callback(in_data, frame_count, time_info, status):
+    out = bytearray()
+    try:
+        for _ in range(frame_count):
+            if audio_fifo:
+                s = audio_fifo.popleft()
+                out.append((s + 128) & 0xFF)  # SIGNED → UNSIGNED
+            else:
+                out.append(128)  # silence (center)
+        return (bytes(out), pyaudio.paContinue)
+    except Exception:
+        return (b'\x80' * frame_count, pyaudio.paContinue)
+
+
 stream = pa.open(
     format=pyaudio.paUInt8,
     channels=1,
     rate=5000,
     output=True,
-    frames_per_buffer=512
+    frames_per_buffer=1024,
+    stream_callback=audio_callback
 )
-
-def audio_thread():
-    silence = bytes([128]) * 512
-    while True:
-        buf = bytearray()
-        for _ in range(512):
-            if audio_fifo:
-                buf.append((audio_fifo.popleft() + 128) & 0xFF)
-            else:
-                buf.append(128)
-        stream.write(bytes(buf))
-
+stream.start_stream()
 
 def update_logic():
     global audio_queue, channels_to_update
@@ -120,8 +124,6 @@ def ready():
     midi_input = mido.open_input(port_name)
     midi_thread = threading.Thread(target=update_midi, daemon=True)
     threading.Thread(target=update_logic, daemon=True).start()
-    threading.Thread(target=audio_thread, daemon=True).start()
-
     midi_thread.start()
     global timer
     timer = QtCore.QTimer()

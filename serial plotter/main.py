@@ -1,6 +1,6 @@
 import time
 import serial
-ser = serial.Serial('COM3', 1000000, timeout=0)
+ser = serial.Serial('COM5', 1000000, timeout=0)
 ser.set_buffer_size(rx_size=16384,tx_size=16384)
 import mido
 mido.set_backend('mido.backends.pygame')
@@ -82,4 +82,3 @@ ready()
 
 if __name__ == '__main__':
     pg.exec()
-

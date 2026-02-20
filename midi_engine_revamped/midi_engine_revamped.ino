@@ -1,5 +1,4 @@
 #include <pgmspace.h>
-#include <Ticker.h>
 #include "sample_0.h"
 #include "sample_1.h"
 #include "sample_02.h"
@@ -255,7 +254,6 @@ for (int i = 0; i < 16; i++){
     mix = sum;
     mix = constrain(mix,-127,128);
     playback[16] = mix;
-    ledcWrite(5,mix + 128);
 }
 
 hw_timer_t *timer = NULL;
@@ -267,9 +265,7 @@ void IRAM_ATTR sendSample() {
 void setup() {
   Serial.setRxBufferSize(1024);
   Serial.begin(1000000);
-  for (int i = 0; i < voices_amount ; i++) voices[i].active = false;
-  ledcAttach(5,80000,8);
-  ticker.attach_us(45, Handle_synthesis);
+  #for (int i = 0; i < voices_amount ; i++) voices[i].active = false;
   timer = timerBegin(5000);
   timerAttachInterrupt(timer, &sendSample);
   timerAlarm(timer, 1, true, 0); 
